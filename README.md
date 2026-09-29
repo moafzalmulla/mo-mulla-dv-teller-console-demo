@@ -20,7 +20,7 @@ npm run test:coverage
 ```
 src/
   domain/          Pure business logic. No React, no clock, no randomness.
-    money.ts       Integer-pence Money type, input parsing, GBP formatting
+    money.ts       Integer-pence Money type, input parsing, GBP formatting for currency
     bank.ts        Accounts, deposit / withdraw / select as pure state transitions
     result.ts      Result<T, E> for expected failures
   state/
@@ -50,6 +50,7 @@ The dependency direction is one-way: `components → state → domain`. The doma
 **Sequential IDs over UUIDs.** `ACC-0001` is unique within the session (the only lifetime that exists here) and is something a teller can read out to a customer. The generator is injected, so swapping to `crypto.randomUUID()` is a one-line change.
 
 **UX details.**
+
 - Opening an account selects it, so the teller can take the first deposit straight away.
 - The transaction form is keyed by account ID: switching customer clears any half-typed amount, so money can't be entered against the wrong account.
 - The amount field only accepts digits, `.`, `,` and `£`; letters are dropped as they're typed or pasted.
@@ -69,11 +70,11 @@ The UI follows the Deutsche Bank brand guidelines (3rd edition, July 2019). All 
 
 76 tests across three levels:
 
-| Level | Files | What it covers |
-| --- | --- | --- |
-| Domain unit | `money.test.ts`, `bank.test.ts` | Parsing edge cases (float traps, commas, precision, limits), every error path, immutability, overdraft boundary (exact balance allowed, +1p rejected) |
-| Store | `bankStore.test.ts`, `ids.test.ts` | Subscription/notification, failed ops don't notify or change state, stable snapshots for `useSyncExternalStore` |
-| Component / integration | `*.test.tsx` | Driven through Testing Library by role and label only, i.e. what a teller sees: open account, deposit, withdraw, overdraft error, switching accounts, form reset on switch |
+| Level                   | Files                              | What it covers                                                                                                                                                             |
+| ----------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain unit             | `money.test.ts`, `bank.test.ts`    | Parsing edge cases (float traps, commas, precision, limits), every error path, immutability, overdraft boundary (exact balance allowed, +1p rejected)                      |
+| Store                   | `bankStore.test.ts`, `ids.test.ts` | Subscription/notification, failed ops don't notify or change state, stable snapshots for `useSyncExternalStore`                                                            |
+| Component / integration | `*.test.tsx`                       | Driven through Testing Library by role and label only, i.e. what a teller sees: open account, deposit, withdraw, overdraft error, switching accounts, form reset on switch |
 
 Pure-logic tests run in the Node environment; component tests use jsdom.
 
