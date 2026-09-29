@@ -25,7 +25,7 @@ src/
     result.ts      Result<T, E> for expected failures
   state/
     bankStore.ts   Small observable store: wires the domain to a clock and ID generator
-    ids.ts         Sequential, human-readable IDs (ACC-0001, TXN-000001)
+    ids.ts         Sequential, random human-readable IDs (ACC-0001, TXN-000001)
     BankProvider.tsx  React context + useSyncExternalStore binding
   components/      UI, one component per responsibility
     messages.ts    Maps domain error codes to teller-facing copy
