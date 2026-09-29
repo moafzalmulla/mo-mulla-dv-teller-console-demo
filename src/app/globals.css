@@ -1,0 +1,501 @@
+:root {
+  /*
+   * Deutsche Bank brand palette (brand guidelines, 3rd edition, July 2019).
+   * Core colours are Deutsche Blue and white. Deutsche Blue is used only as a
+   * solid colour, never tinted. The three supporting blues may be tinted, so
+   * all neutrals below are tints of the dark supporting blue (PMS 289c)
+   * rather than tints of black, which the guidelines rule out.
+   */
+  --db-blue: #0018a8;          /* Deutsche Blue, PMS 072c. Solid only. */
+  --db-white: #ffffff;
+  --db-dark-blue: #0c2340;     /* Supporting blue, PMS 289c */
+  --db-mid-blue: #00a3e0;      /* Supporting blue, PMS 299c */
+  --db-light-blue: #4ac9e3;    /* Supporting blue, PMS 2198c */
+
+  /* Roles */
+  --ink: var(--db-dark-blue);  /* Body text: dark blue instead of black */
+  --surface: var(--db-white);
+  --paper: #f3f4f5;            /* 5% tint of PMS 289c */
+  --line: #dbdee2;             /* 15% tint of PMS 289c */
+  --muted: #55657a;            /* 70% tint of PMS 289c, 5.9:1 on white */
+  --highlight: var(--db-blue);
+  --selected-bg: #edf9fc;      /* 10% tint of PMS 2198c */
+  --deposit: var(--db-blue);
+  --withdraw: var(--db-dark-blue);
+  /* Functional error colour for accessibility; not a brand palette colour. */
+  --error: #b42318;
+  --focus: var(--db-blue);
+
+  --radius-panel: 4px;
+  --radius-control: 2px;
+
+  /*
+   * Deutsche Bank Text / Display are licensed typefaces. Where they are not
+   * installed, the guidelines specify Arial for Text and Calibri Light for
+   * Display. Arial is the last resort for Display too, on systems without
+   * Calibri (macOS, Linux).
+   */
+  --font-text: "Deutsche Bank Text", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-display: "Deutsche Bank Display", "Calibri Light", Calibri, Arial, sans-serif;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  hyphens: manual; /* No hyphens at line endings (English copy) */
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Display type. Size for size, Calibri Light is noticeably smaller than
+ * Deutsche Bank Display, so font-size-adjust normalises its x-height to
+ * roughly Arial's and the fallback reads at the intended size.
+ */
+.console-header h1,
+.account-name,
+.balance-value,
+.empty-workspace h2 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size-adjust: 0.52;
+  color: var(--highlight);
+}
+
+/* Money is always set in tabular figures so columns line up digit for digit. */
+.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Layout ---------- */
+
+.console {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.console-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+}
+
+.console-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+
+.db-logo {
+  flex-shrink: 0;
+}
+
+.console-header h1 {
+  font-size: 1.75rem;
+}
+
+.console-header p {
+  font-size: 0.875rem;
+}
+
+.console-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.sidebar {
+  display: grid;
+  gap: 1.25rem;
+}
+
+/* Grid items default to min-width: auto; let them shrink to their track. */
+.sidebar,
+.workspace {
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .console-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Panels ---------- */
+
+.panel,
+.account-panel,
+.empty-workspace {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 1.25rem;
+}
+
+.panel-title {
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--highlight);
+  margin-bottom: 0.75rem;
+}
+
+.count {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-left: 0.25rem;
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  text-align: center;
+}
+
+.empty-workspace {
+  padding: 2.5rem 1.5rem;
+}
+
+.empty-workspace h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ---------- Forms ---------- */
+
+label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+input[type="text"],
+input:not([type]) {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+button {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--db-blue);
+  color: var(--db-white);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.field-error {
+  margin-top: 0.4rem;
+  color: var(--error);
+  font-size: 0.875rem;
+}
+
+.field-status {
+  margin-top: 0.4rem;
+  color: var(--highlight);
+  font-size: 0.875rem;
+  min-height: 1.3em;
+}
+
+.field-status:empty {
+  display: none;
+}
+
+/* ---------- Account list ---------- */
+
+.account-list {
+  list-style: none;
+  margin: 0 -0.5rem;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.account-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 400;
+  padding: 0.6rem 0.5rem 0.6rem 0.75rem;
+  border-left: 3px solid transparent;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+.account-item:hover {
+  background: var(--paper);
+}
+
+.account-item[aria-current="true"] {
+  background: var(--selected-bg);
+  border-left-color: var(--db-blue);
+}
+
+.account-item-name {
+  display: block;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-item-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ---------- Account panel ---------- */
+
+.account-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem 2rem;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-name {
+  font-size: 1.75rem;
+  overflow-wrap: anywhere;
+}
+
+.account-id {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.balance {
+  margin-left: auto;
+  text-align: right;
+}
+
+.balance-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* The one loud element on the page: the number the teller reads back. */
+.balance-value {
+  display: block;
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  /* Display may be tracked up to -40/1000em at large sizes. */
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.transaction-form {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.transaction-form > * {
+  max-width: 34rem;
+}
+
+.segmented {
+  display: inline-flex;
+  margin: 0 0 1rem;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--paper);
+}
+
+.segment {
+  margin: 0;
+  position: relative;
+}
+
+.segment input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.segment span {
+  display: block;
+  padding: 0.35rem 0.9rem;
+  border-radius: 3px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.segment input:checked + span {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.segment input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.currency-input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding-left: 0.65rem;
+  color: var(--muted);
+}
+
+.currency-input:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.currency-input input {
+  border: 0;
+  outline: none;
+  padding-left: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.currency-input:has(input[aria-invalid="true"]) {
+  border-color: var(--error);
+}
+
+.action-deposit {
+  background: var(--deposit);
+}
+
+.action-withdrawal {
+  background: var(--withdraw);
+}
+
+/* ---------- Ledger ---------- */
+
+.section-title {
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--highlight);
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+.empty-history {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  padding: 0 1.5rem 1rem;
+}
+
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.ledger th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ledger td {
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  border-bottom: 1px solid var(--paper);
+  white-space: nowrap;
+}
+
+.ledger .num {
+  text-align: right;
+  padding-right: 0;
+}
+
+.ledger tr[data-type="deposit"] td:nth-child(3) {
+  color: var(--deposit);
+}
+
+.ledger tr[data-type="withdrawal"] td:nth-child(3) {
+  color: var(--withdraw);
+}
