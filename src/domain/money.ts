@@ -36,6 +36,10 @@ export type AmountError =
 // so we can distinguish "too many decimals" from "not a number".
 const AMOUNT_PATTERN = /^£?(\d+|\d{1,3}(?:,\d{3})+)?(?:\.(\d*))?$/;
 
+// Anything a teller could legitimately type in an amount; letters and other
+// symbols are dropped as they are typed or pasted.
+export const NOT_AMOUNT_CHARS = /[^\d.,£]/g;
+
 /**
  * Parses teller input such as "25", "25.5", "£1,250.00" or ".75" into cents.
  * Parsing is done on the string digits, never via parseFloat.

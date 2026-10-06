@@ -10,11 +10,27 @@ const dateTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "medium",
 });
 
+function describeType(tx: Transaction): string {
+  switch (tx.type) {
+    case "deposit":
+      return "Deposit";
+    case "withdrawal":
+      return "Withdrawal";
+    case "transfer-out":
+      return `Transfer to ${tx.counterpartyAccountId}`;
+    case "transfer-in":
+      return `Transfer from ${tx.counterpartyAccountId}`;
+  }
+}
+
+const isCredit = (tx: Transaction) =>
+  tx.type === "deposit" || tx.type === "transfer-in";
+
 export function TransactionHistory({ transactions }: TransactionHistoryProps) {
   if (transactions.length === 0) {
     return (
       <p className="muted empty-history">
-        No transactions yet. Deposits and withdrawals will be listed here.
+        No transactions yet. Deposits, withdrawals and transfers will be listed here.
       </p>
     );
   }
@@ -48,9 +64,9 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
                   {dateTime.format(new Date(tx.occurredAt))}
                 </time>
               </td>
-              <td>{tx.type === "deposit" ? "Deposit" : "Withdrawal"}</td>
+              <td>{describeType(tx)}</td>
               <td className="num amount">
-                {tx.type === "deposit" ? "+" : "−"}
+                {isCredit(tx) ? "+" : "−"}
                 {formatCents(tx.amount)}
               </td>
               <td className="num amount">{formatCents(tx.balanceAfter)}</td>

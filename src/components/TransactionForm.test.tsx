@@ -16,7 +16,7 @@ describe("<TransactionForm>", () => {
   const balance = () => store.getState().accounts[0]?.balance;
 
   it("deposits by default", async () => {
-    const { user } = renderWithBank(<TransactionForm accountId="ACC-0001" />, store);
+    const { user } = renderWithBank(<TransactionForm account={store.getState().accounts[0]!} />, store);
 
     await user.type(screen.getByLabelText("Amount"), "125.50");
     await user.click(screen.getByRole("button", { name: "Deposit" }));
@@ -28,7 +28,7 @@ describe("<TransactionForm>", () => {
 
   it("withdraws when Withdrawal is chosen", async () => {
     store.deposit("ACC-0001", cents(10_000));
-    const { user } = renderWithBank(<TransactionForm accountId="ACC-0001" />, store);
+    const { user } = renderWithBank(<TransactionForm account={store.getState().accounts[0]!} />, store);
 
     await user.click(screen.getByRole("radio", { name: "Withdrawal" }));
     await user.type(screen.getByLabelText("Amount"), "40");
@@ -40,7 +40,7 @@ describe("<TransactionForm>", () => {
 
   it("blocks an overdraft with a validation error and keeps the amount", async () => {
     store.deposit("ACC-0001", cents(2_000));
-    const { user } = renderWithBank(<TransactionForm accountId="ACC-0001" />, store);
+    const { user } = renderWithBank(<TransactionForm account={store.getState().accounts[0]!} />, store);
 
     await user.click(screen.getByRole("radio", { name: "Withdrawal" }));
     await user.type(screen.getByLabelText("Amount"), "20.01");
@@ -54,7 +54,7 @@ describe("<TransactionForm>", () => {
   });
 
   it("ignores letters and other symbols in the amount", async () => {
-    const { user } = renderWithBank(<TransactionForm accountId="ACC-0001" />, store);
+    const { user } = renderWithBank(<TransactionForm account={store.getState().accounts[0]!} />, store);
     const input = screen.getByLabelText("Amount");
 
     await user.type(input, "1a2-b.5 0x");
@@ -66,6 +66,20 @@ describe("<TransactionForm>", () => {
     expect(input).toHaveValue("£1,250.00");
   });
 
+  it("shows the transfer form on the Transfer tab", async () => {
+    store.openAccount("Grace Hopper");
+    store.deposit("ACC-0001", cents(5_000));
+    const { user } = renderWithBank(<TransactionForm account={store.getState().accounts[0]!} />, store);
+
+    await user.click(screen.getByRole("radio", { name: "Transfer" }));
+    await user.selectOptions(screen.getByLabelText("To account"), "ACC-0002");
+    await user.type(screen.getByLabelText("Transfer amount"), "20");
+    await user.click(screen.getByRole("button", { name: "Transfer" }));
+
+    expect(store.getState().accounts.map((a) => a.balance)).toEqual([3_000, 2_000]);
+    expect(screen.queryByLabelText("Amount")).not.toBeInTheDocument();
+  });
+
   it.each([
     ["", "Enter an amount."],
     ["1.2.3", "Enter the amount as a number, for example 25.00."],
@@ -73,7 +87,7 @@ describe("<TransactionForm>", () => {
     ["1.234", "Amounts can't go below a penny. Use up to 2 decimal places."],
     ["2000000", "The counter limit is £1,000,000.00 per transaction."],
   ])("rejects %j", async (input, message) => {
-    const { user } = renderWithBank(<TransactionForm accountId="ACC-0001" />, store);
+    const { user } = renderWithBank(<TransactionForm account={store.getState().accounts[0]!} />, store);
 
     if (input) await user.type(screen.getByLabelText("Amount"), input);
     await user.click(screen.getByRole("button", { name: "Deposit" }));

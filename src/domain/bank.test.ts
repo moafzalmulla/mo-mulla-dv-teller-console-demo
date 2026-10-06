@@ -7,6 +7,7 @@ import {
   MAX_CUSTOMER_NAME_LENGTH,
   openAccount,
   selectAccount,
+  transfer,
   withdraw,
   type BankState,
 } from "./bank";
@@ -195,6 +196,97 @@ describe("withdraw", () => {
     expect(withdraw(withAccount(), "ACC-0001", cents(1), txContext())).toMatchObject({
       ok: false,
       error: { code: "INSUFFICIENT_FUNDS" },
+    });
+  });
+});
+
+describe("transfer", () => {
+  const funded = () =>
+    unwrap(
+      deposit(
+        withAccount(withAccount(), "Grace Hopper", "ACC-0002"),
+        "ACC-0001",
+        cents(10_000),
+        txContext(),
+      ),
+    );
+
+  it("moves money between accounts and records both legs", () => {
+    let n = 0;
+    const state = unwrap(
+      transfer(funded(), "ACC-0001", "ACC-0002", cents(2_500), {
+        createTransactionId: () => `T${++n}`,
+        now: NOW,
+      }),
+    );
+    const [from, to] = state.accounts;
+
+    expect(from?.balance).toBe(7_500);
+    expect(to?.balance).toBe(2_500);
+    expect(from?.transactions.at(-1)).toEqual({
+      id: "T1",
+      type: "transfer-out",
+      amount: 2_500,
+      balanceAfter: 7_500,
+      occurredAt: "2026-01-15T10:30:00.000Z",
+      counterpartyAccountId: "ACC-0002",
+    });
+    expect(to?.transactions).toEqual([
+      {
+        id: "T2",
+        type: "transfer-in",
+        amount: 2_500,
+        balanceAfter: 2_500,
+        occurredAt: "2026-01-15T10:30:00.000Z",
+        counterpartyAccountId: "ACC-0001",
+      },
+    ]);
+  });
+
+  it("allows transferring the entire balance", () => {
+    const state = unwrap(
+      transfer(funded(), "ACC-0001", "ACC-0002", cents(10_000), txContext()),
+    );
+    expect(state.accounts.map((a) => a.balance)).toEqual([0, 10_000]);
+  });
+
+  it("rejects insufficient funds without changing state or consuming an ID", () => {
+    const before = funded();
+    let idsIssued = 0;
+    const result = transfer(before, "ACC-0001", "ACC-0002", cents(10_001), {
+      createTransactionId: () => `T${++idsIssued}`,
+      now: NOW,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: { code: "INSUFFICIENT_FUNDS", available: 10_000, requested: 10_001 },
+    });
+    expect(idsIssued).toBe(0);
+    expect(before.accounts.map((a) => a.balance)).toEqual([10_000, 0]);
+  });
+
+  it("rejects transfers to the same account", () => {
+    expect(transfer(funded(), "ACC-0001", "ACC-0001", cents(100), txContext())).toEqual({
+      ok: false,
+      error: { code: "SAME_ACCOUNT_TRANSFER" },
+    });
+  });
+
+  it.each([
+    ["ACC-9999", "ACC-0002"],
+    ["ACC-0001", "ACC-9999"],
+  ])("rejects unknown accounts (%s -> %s)", (from, to) => {
+    expect(transfer(funded(), from, to, cents(100), txContext())).toEqual({
+      ok: false,
+      error: { code: "ACCOUNT_NOT_FOUND", accountId: "ACC-9999" },
+    });
+  });
+
+  it("rejects non-positive amounts", () => {
+    expect(transfer(funded(), "ACC-0001", "ACC-0002", cents(0), txContext())).toEqual({
+      ok: false,
+      error: { code: "NON_POSITIVE_AMOUNT" },
     });
   });
 });

@@ -1,39 +1,48 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
-import type { AccountId, TransactionType } from "@/domain/bank";
-import { formatCents, parseAmount } from "@/domain/money";
+import type { Account, CashTransactionType } from "@/domain/bank";
+import { formatCents, NOT_AMOUNT_CHARS, parseAmount } from "@/domain/money";
 import { useBankStore } from "@/state/BankProvider";
 import { describeError } from "./messages";
+import { TransferForm } from "./TransferForm";
 
 interface TransactionFormProps {
-  accountId: AccountId;
+  account: Account;
 }
 
-// Anything a teller could legitimately type in an amount; letters and other
-// symbols are dropped as they are typed or pasted.
-const NOT_AMOUNT_CHARS = /[^\d.,£]/g;
-
-const ACTIONS: Record<TransactionType, { label: string; done: string }> = {
+const ACTIONS: Record<CashTransactionType, { label: string; done: string }> = {
   deposit: { label: "Deposit", done: "Deposited" },
   withdrawal: { label: "Withdraw", done: "Withdrew" },
 };
 
+type Tab = CashTransactionType | "transfer";
+
+const TABS: Record<Tab, string> = {
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+  transfer: "Transfer",
+};
+
 /**
- * Deposit / withdraw cash for one account. The parent keys this component by
- * account ID so switching accounts resets the form rather than carrying a
- * half-entered amount across customers.
+ * Deposit / withdraw / transfer for one account, chosen with a segmented
+ * control. The parent keys this component by account ID so switching accounts
+ * resets the form rather than carrying a half-entered amount across customers.
  */
-export function TransactionForm({ accountId }: TransactionFormProps) {
+export function TransactionForm({ account }: TransactionFormProps) {
+  const accountId = account.id;
   const store = useBankStore();
   const amountId = useId();
   const errorId = useId();
-  const [type, setType] = useState<TransactionType>("deposit");
+  const [tab, setTab] = useState<Tab>("deposit");
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+    type: CashTransactionType,
+  ) {
     event.preventDefault();
     const parsed = parseAmount(amount);
     if (!parsed.ok) {
@@ -56,57 +65,63 @@ export function TransactionForm({ accountId }: TransactionFormProps) {
   }
 
   return (
-    <form className="transaction-form" onSubmit={handleSubmit} noValidate>
+    <div className="transaction-form">
       <fieldset className="segmented">
         <legend className="visually-hidden">Transaction type</legend>
-        {(Object.keys(ACTIONS) as TransactionType[]).map((option) => (
+        {(Object.keys(TABS) as Tab[]).map((option) => (
           <label key={option} className="segment">
             <input
               type="radio"
               name="transactionType"
               value={option}
-              checked={type === option}
+              checked={tab === option}
               onChange={() => {
-                setType(option);
+                setTab(option);
                 setError(null);
               }}
             />
-            <span>{option === "deposit" ? "Deposit" : "Withdrawal"}</span>
+            <span>{TABS[option]}</span>
           </label>
         ))}
       </fieldset>
 
-      <label htmlFor={amountId}>Amount</label>
-      <div className="field-row">
-        <div className="currency-input">
-          <span aria-hidden="true">£</span>
-          <input
-            id={amountId}
-            name="amount"
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0.00"
-            value={amount}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
-            onChange={(event) => {
-              setAmount(event.target.value.replace(NOT_AMOUNT_CHARS, ""));
-              setError(null);
-            }}
-          />
-        </div>
-        <button type="submit" className={`action-${type}`}>
-          {ACTIONS[type].label}
-        </button>
-      </div>
-      {error && (
-        <p id={errorId} className="field-error" role="alert">
-          {error}
-        </p>
+      {tab === "transfer" ? (
+        <TransferForm account={account} />
+      ) : (
+        <form onSubmit={(event) => handleSubmit(event, tab)} noValidate>
+          <label htmlFor={amountId}>Amount</label>
+          <div className="field-row">
+            <div className="currency-input">
+              <span aria-hidden="true">£</span>
+              <input
+                id={amountId}
+                name="amount"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0.00"
+                value={amount}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
+                onChange={(event) => {
+                  setAmount(event.target.value.replace(NOT_AMOUNT_CHARS, ""));
+                  setError(null);
+                }}
+              />
+            </div>
+            <button type="submit" className={`action-${tab}`}>
+              {ACTIONS[tab].label}
+            </button>
+          </div>
+          {error && (
+            <p id={errorId} className="field-error" role="alert">
+              {error}
+            </p>
+          )}
+          <p className="field-status" role="status">
+            {confirmation}
+          </p>
+        </form>
       )}
-      <p className="field-status" role="status">
-        {confirmation}
-      </p>
-    </form>
+    </div>
   );
 }

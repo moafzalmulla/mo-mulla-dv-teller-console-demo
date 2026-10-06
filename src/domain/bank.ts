@@ -10,7 +10,9 @@ import { err, ok, type Result } from "./result";
 
 export type AccountId = string;
 export type TransactionId = string;
-export type TransactionType = "deposit" | "withdrawal";
+/** Cash over the counter. */
+export type CashTransactionType = "deposit" | "withdrawal";
+export type TransactionType = CashTransactionType | "transfer-out" | "transfer-in";
 
 export interface Transaction {
   readonly id: TransactionId;
@@ -19,6 +21,8 @@ export interface Transaction {
   readonly balanceAfter: Cents;
   /** ISO-8601 timestamp. */
   readonly occurredAt: string;
+  /** The other account in a transfer; absent for cash transactions. */
+  readonly counterpartyAccountId?: AccountId;
 }
 
 export interface Account {
@@ -42,6 +46,7 @@ export type BankError =
   | { readonly code: "DUPLICATE_ACCOUNT_ID"; readonly accountId: AccountId }
   | { readonly code: "ACCOUNT_NOT_FOUND"; readonly accountId: AccountId }
   | { readonly code: "NON_POSITIVE_AMOUNT" }
+  | { readonly code: "SAME_ACCOUNT_TRANSFER" }
   | {
       readonly code: "INSUFFICIENT_FUNDS";
       readonly available: Cents;
@@ -124,6 +129,50 @@ export function withdraw(
   return applyTransaction(state, accountId, "withdrawal", amount, context);
 }
 
+/**
+ * Moves money between two accounts as a single step: both legs are recorded
+ * or neither is. Overdrafts are rejected with INSUFFICIENT_FUNDS.
+ */
+export function transfer(
+  state: BankState,
+  fromAccountId: AccountId,
+  toAccountId: AccountId,
+  amount: Cents,
+  { createTransactionId, now }: TransactionContext,
+): Result<BankState, BankError> {
+  const from = findAccount(state, fromAccountId);
+  if (!from) return err({ code: "ACCOUNT_NOT_FOUND", accountId: fromAccountId });
+  const to = findAccount(state, toAccountId);
+  if (!to) return err({ code: "ACCOUNT_NOT_FOUND", accountId: toAccountId });
+  if (fromAccountId === toAccountId) return err({ code: "SAME_ACCOUNT_TRANSFER" });
+
+  const invalid = validateAmount(from, "transfer-out", amount);
+  if (invalid) return err(invalid);
+
+  const occurredAt = now.toISOString();
+  const debited = appendTransaction(from, {
+    id: createTransactionId(),
+    type: "transfer-out",
+    amount,
+    occurredAt,
+    counterpartyAccountId: toAccountId,
+  });
+  const credited = appendTransaction(to, {
+    id: createTransactionId(),
+    type: "transfer-in",
+    amount,
+    occurredAt,
+    counterpartyAccountId: fromAccountId,
+  });
+
+  return ok({
+    ...state,
+    accounts: state.accounts.map((a) =>
+      a.id === fromAccountId ? debited : a.id === toAccountId ? credited : a,
+    ),
+  });
+}
+
 export function selectAccount(
   state: BankState,
   accountId: AccountId,
@@ -150,47 +199,64 @@ export function getSelectedAccount(state: BankState): Account | undefined {
 function applyTransaction(
   state: BankState,
   accountId: AccountId,
-  type: TransactionType,
+  type: CashTransactionType,
   amount: Cents,
   { createTransactionId, now }: TransactionContext,
 ): Result<BankState, BankError> {
   const account = findAccount(state, accountId);
   if (!account) return err({ code: "ACCOUNT_NOT_FOUND", accountId });
 
-  // Callers should already have validated via parseAmount; this is the
-  // domain's own invariant, not UI validation.
-  if (amount <= 0) return err({ code: "NON_POSITIVE_AMOUNT" });
+  const invalid = validateAmount(account, type, amount);
+  if (invalid) return err(invalid);
 
-  if (type === "withdrawal" && amount > account.balance) {
-    return err({
-      code: "INSUFFICIENT_FUNDS",
-      available: account.balance,
-      requested: amount,
-    });
-  }
-
-  const balanceAfter =
-    type === "deposit"
-      ? addCents(account.balance, amount)
-      : subtractCents(account.balance, amount);
-
-  const updated: Account = {
-    ...account,
-    balance: balanceAfter,
-    transactions: [
-      ...account.transactions,
-      {
-        id: createTransactionId(),
-        type,
-        amount,
-        balanceAfter,
-        occurredAt: now.toISOString(),
-      },
-    ],
-  };
+  const updated = appendTransaction(account, {
+    id: createTransactionId(),
+    type,
+    amount,
+    occurredAt: now.toISOString(),
+  });
 
   return ok({
     ...state,
     accounts: state.accounts.map((a) => (a.id === accountId ? updated : a)),
   });
+}
+
+function isDebit(type: TransactionType): boolean {
+  return type === "withdrawal" || type === "transfer-out";
+}
+
+function validateAmount(
+  account: Account,
+  type: TransactionType,
+  amount: Cents,
+): BankError | undefined {
+  // Callers should already have validated via parseAmount; this is the
+  // domain's own invariant, not UI validation.
+  if (amount <= 0) return { code: "NON_POSITIVE_AMOUNT" };
+
+  if (isDebit(type) && amount > account.balance) {
+    return {
+      code: "INSUFFICIENT_FUNDS",
+      available: account.balance,
+      requested: amount,
+    };
+  }
+  return undefined;
+}
+
+/** Applies an already-validated transaction and records the running balance. */
+function appendTransaction(
+  account: Account,
+  transaction: Omit<Transaction, "balanceAfter">,
+): Account {
+  const balanceAfter = isDebit(transaction.type)
+    ? subtractCents(account.balance, transaction.amount)
+    : addCents(account.balance, transaction.amount);
+
+  return {
+    ...account,
+    balance: balanceAfter,
+    transactions: [...account.transactions, { ...transaction, balanceAfter }],
+  };
 }

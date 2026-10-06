@@ -27,6 +27,8 @@ export function describeError(error: BankError | AmountError): string {
       return `Account ${error.accountId} already exists. Try again.`;
     case "ACCOUNT_NOT_FOUND":
       return `Account ${error.accountId} doesn't exist.`;
+    case "SAME_ACCOUNT_TRANSFER":
+      return "Choose a different account to transfer to.";
     case "INSUFFICIENT_FUNDS":
       return `Insufficient funds. The available balance is ${formatCents(error.available)}.`;
   }

@@ -31,7 +31,7 @@ export function AccountPanel({ account }: AccountPanelProps) {
         </div>
       </header>
 
-      <TransactionForm key={account.id} accountId={account.id} />
+      <TransactionForm key={account.id} account={account} />
 
       <h3 className="section-title">Transactions</h3>
       <TransactionHistory transactions={account.transactions} />

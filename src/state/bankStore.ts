@@ -3,6 +3,7 @@ import {
   initialBankState,
   openAccount,
   selectAccount,
+  transfer,
   withdraw,
   type Account,
   type AccountId,
@@ -25,6 +26,11 @@ export interface BankStore {
   openAccount(customerName: string): Result<Account, BankError>;
   deposit(accountId: AccountId, amount: Cents): Result<BankState, BankError>;
   withdraw(accountId: AccountId, amount: Cents): Result<BankState, BankError>;
+  transfer(
+    fromAccountId: AccountId,
+    toAccountId: AccountId,
+    amount: Cents,
+  ): Result<BankState, BankError>;
   selectAccount(accountId: AccountId): Result<BankState, BankError>;
 }
 
@@ -92,6 +98,14 @@ export function createBankStore(
     withdraw: (accountId, amount) =>
       run(
         withdraw(state, accountId, amount, {
+          createTransactionId: deps.nextTransactionId,
+          now: deps.now(),
+        }),
+      ),
+
+    transfer: (fromAccountId, toAccountId, amount) =>
+      run(
+        transfer(state, fromAccountId, toAccountId, amount, {
           createTransactionId: deps.nextTransactionId,
           now: deps.now(),
         }),

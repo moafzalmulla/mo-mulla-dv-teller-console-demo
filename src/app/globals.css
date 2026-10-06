@@ -448,6 +448,32 @@ button {
   background: var(--withdraw);
 }
 
+.action-transfer {
+  background: var(--db-blue);
+}
+
+.transaction-form select {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.9rem;
+  font: inherit;
+  color: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.field-hint {
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.transfer-empty {
+  margin: 0;
+}
+
 /* ---------- Ledger ---------- */
 
 .section-title {
@@ -492,10 +518,12 @@ button {
   padding-right: 0;
 }
 
-.ledger tr[data-type="deposit"] td:nth-child(3) {
+.ledger tr[data-type="deposit"] td:nth-child(3),
+.ledger tr[data-type="transfer-in"] td:nth-child(3) {
   color: var(--deposit);
 }
 
-.ledger tr[data-type="withdrawal"] td:nth-child(3) {
+.ledger tr[data-type="withdrawal"] td:nth-child(3),
+.ledger tr[data-type="transfer-out"] td:nth-child(3) {
   color: var(--withdraw);
 }
